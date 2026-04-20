@@ -8,28 +8,52 @@ export async function getDb(): Promise<Database> {
   }
   if (!db) {
     db = await Database.load('sqlite:restaurantOS.db');
+    await optimizeDatabase(db);
   }
   return db;
+}
+
+export async function optimizeDatabase(database: Database): Promise<void> {
+  const optimizations = [
+    { pragma: 'journal_mode', value: 'WAL' },
+    { pragma: 'synchronous', value: 'NORMAL' },
+    { pragma: 'cache_size', value: -64000 },
+    { pragma: 'temp_store', value: 'MEMORY' },
+    { pragma: 'foreign_keys', value: 'ON' },
+    { pragma: 'busy_timeout', value: 5000 },
+  ];
+  for (const opt of optimizations) {
+    try {
+      await database.execute(`PRAGMA ${opt.pragma} = ${opt.value}`);
+    } catch (err) {
+      console.warn(`[DB_OPTIMIZE] Failed to set PRAGMA ${opt.pragma}:`, err);
+    }
+  }
+  console.log('[DB_OPTIMIZE] SQLite optimized for Apple Silicon (WAL mode)');
 }
 
 export async function query<T>(sql: string, params: unknown[] = []): Promise<T[]> {
   try {
     const database = await getDb();
     if (!database) return [];
-    const rows = await database.select<T[]>(sql, params);
-    return rows;
-  } catch {
-    return [];
+    return await database.select<T[]>(sql, params);
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error(`[DB_QUERY_ERROR] SQL: "${sql}" | Params: ${JSON.stringify(params)} | Error: ${errorMsg}`);
+    throw new Error(`Database operation failed. ${process.env.NODE_ENV === 'development' ? `Details: ${errorMsg}` : 'Please try again or contact support.'}`);
   }
 }
 
-export async function execute(sql: string, params: unknown[] = []): Promise<void> {
+export async function execute(sql: string, params: unknown[] = []): Promise<{ changes: number; lastInsertRowid: number | bigint | null }> {
   try {
     const database = await getDb();
-    if (!database) return;
-    await database.execute(sql, params);
-  } catch {
-    // Silently skip if DB not available
+    if (!database) return { changes: 0, lastInsertRowid: null };
+    const result = await database.execute(sql, params);
+    return { changes: result.rowsAffected, lastInsertRowid: result.lastInsertId };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error(`[DB_EXECUTE_ERROR] SQL: "${sql}" | Params: ${JSON.stringify(params)} | Error: ${errorMsg}`);
+    throw new Error(`Database write failed. ${process.env.NODE_ENV === 'development' ? `Details: ${errorMsg}` : 'Please try again.'}`);
   }
 }
 
@@ -46,7 +70,10 @@ export async function withTransaction<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
-const VALID_TABLE_COLUMNS: Record<string, string[]> = {
+const SAFE_TABLES = ['menu_categories', 'menu_items', 'modifiers', 'restaurant_tables', 'reservations', 'orders', 'order_items', 'payments', 'inventory_categories', 'inventory_items', 'inventory_transactions', 'staff', 'attendance', 'expenses', 'settings'] as const;
+type SafeTable = typeof SAFE_TABLES[number];
+
+const VALID_COLUMNS: Record<SafeTable, readonly string[]> = {
   menu_categories: ['name', 'description', 'color', 'icon', 'sort_order', 'is_active'],
   menu_items: ['category_id', 'name', 'description', 'price', 'cost_price', 'sku', 'image_path', 'is_active', 'is_available', 'prep_time_min', 'sort_order'],
   modifiers: ['menu_item_id', 'name', 'options', 'is_required'],
@@ -62,23 +89,27 @@ const VALID_TABLE_COLUMNS: Record<string, string[]> = {
   attendance: ['staff_id', 'date', 'check_in', 'check_out', 'status', 'notes'],
   expenses: ['category', 'description', 'amount', 'date', 'paid_by', 'receipt_ref', 'notes'],
   settings: ['key', 'value'],
-};
+} as const;
 
-export function validateColumns(table: string, data: Record<string, unknown>): string[] {
-  const allowed = VALID_TABLE_COLUMNS[table];
-  if (!allowed) {
-    throw new Error(`Unknown table: ${table}`);
-  }
+export function validateColumns<T extends SafeTable>(table: T, data: Record<string, unknown>): string[] {
+  const allowed = VALID_COLUMNS[table];
   const validFields: string[] = [];
   for (const key of Object.keys(data)) {
-    if (allowed.includes(key)) {
+    if (allowed.includes(key as typeof allowed[number])) {
       validFields.push(key);
     }
   }
   return validFields;
 }
 
-export function buildUpdateSql(table: string, data: Record<string, unknown>, id: number): { sql: string; params: unknown[] } {
+export function buildUpdateSql<T extends SafeTable>(
+  table: T,
+  data: Record<string, unknown>,
+  id: number
+): { sql: string; params: unknown[] } {
+  if (!SAFE_TABLES.includes(table)) {
+    throw new Error(`[SECURITY] Unsafe table name: ${table}`);
+  }
   const fields = validateColumns(table, data);
   if (fields.length === 0) {
     throw new Error(`No valid fields to update for table: ${table}`);

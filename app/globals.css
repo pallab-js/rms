@@ -149,7 +149,16 @@
     @apply bg-[#0f0f0f] text-[#fafafa] border border-[#2e2e2e] rounded-full px-8 py-2 opacity-80 transition-all hover:border-[#363636] hover:opacity-100;
   }
   
-  .code-label {
-    @apply font-mono text-[12px] uppercase tracking-[1.2px] text-[#898989];
+.code-label {
+  @apply font-mono text-[12px] uppercase tracking-[1.2px] text-[#898989];
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

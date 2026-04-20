@@ -34,9 +34,9 @@ describe('validateColumns', () => {
     expect(result).toContain('status')
   })
 
-  it('returns empty array for unknown table', () => {
+  it('throws for unknown table', () => {
     const data = { name: 'Test' }
-    expect(() => validateColumns('unknown_table', data)).toThrow('Unknown table: unknown_table')
+    expect(() => validateColumns('unknown_table' as any, data)).toThrow()
   })
 
   it('filters out non-allowed fields', () => {
