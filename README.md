@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Restaurant OS
 
-## Getting Started
+A desktop restaurant management system built with Tauri, Next.js, and SQLite.
 
-First, run the development server:
+## Features
+
+- **Dashboard** - Real-time sales overview, order tracking, low-stock alerts
+- **Tables** - Table layout editor, reservation Management, timeline view
+- **Orders** - Order creation, multi-item cart, payment processing
+- **Menu** - Categories, items, modifiers, pricing with margin calculation
+- **Inventory** - Stock tracking, transactions, low-stock alerts
+- **Staff** - Employee management, roles, attendance tracking
+- **Billing** - Split payments, multiple payment methods
+- **Reports** - Sales analytics, expense tracking
+- **Settings** - Restaurant configuration, tax settings
+
+## Tech Stack
+
+- **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS
+- **Desktop**: Tauri 2.x
+- **Database**: SQLite (via @tauri-apps/plugin-sql)
+- **State**: Zustand
+- **Forms**: React Hook Form + Zod validation
+- **UI**: shadcn/ui components
+
+## Development
 
 ```bash
+# Install dependencies
+npm install
+
+# Run in development
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Run tests
+npm test
+
+# Build for production
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Desktop Build
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Build Tauri app
+npm run tauri build
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project Structure
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+app/              # Next.js pages/routes
+components/       # React components (organized by feature)
+lib/             # Utilities, database, validation
+stores/           # Zustand stores
+types/           # TypeScript definitions
+src-tauri/       # Tauri backend (Rust)
+```
