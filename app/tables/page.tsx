@@ -69,11 +69,7 @@ export default function TablesPage() {
   } = useTableStore()
 
   const searchParams = useSearchParams()
-  const initialTab = (() => {
-    const hash = typeof window !== "undefined" ? window.location.hash.slice(1) : ""
-    const param = searchParams.get("view")
-    return hash === "reservations" || param === "reservations" ? "reservations" : "map"
-  })()
+  const initialTab = searchParams.get("tab") === "reservations" ? "reservations" : "map"
   const [activeTab, setActiveTab] = useState(initialTab)
   const [isTableModalOpen, setIsTableModalOpen] = useState(false)
   const [isReservationModalOpen, setIsReservationModalOpen] = useState(false)

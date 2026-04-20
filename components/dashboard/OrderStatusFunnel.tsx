@@ -1,27 +1,26 @@
 "use client"
 
 import React from "react"
-import { Order } from "@/types"
 import { cn } from "@/lib/utils"
 
 interface OrderStatusFunnelProps {
-  orders: Order[]
+  ordersByStatus: Record<string, number>
 }
 
-export default function OrderStatusFunnel({ orders }: OrderStatusFunnelProps) {
-  const counts = {
-    pending: orders.filter(o => o.status === 'pending').length,
-    preparing: orders.filter(o => o.status === 'preparing').length,
-    ready: orders.filter(o => o.status === 'ready').length,
-    served: orders.filter(o => o.status === 'served').length,
-  }
-
+export default function OrderStatusFunnel({ ordersByStatus }: OrderStatusFunnelProps) {
   const stages = [
     { label: "Pending", key: "pending", color: "bg-danger" },
     { label: "Preparing", key: "preparing", color: "bg-warning" },
     { label: "Ready", key: "ready", color: "bg-primary" },
     { label: "Served", key: "served", color: "bg-success" },
   ]
+
+  const counts = {
+    pending: ordersByStatus.pending || 0,
+    preparing: ordersByStatus.preparing || 0,
+    ready: ordersByStatus.ready || 0,
+    served: ordersByStatus.served || 0,
+  }
 
   const max = Math.max(...Object.values(counts), 1)
 

@@ -3,6 +3,9 @@ import Database from '@tauri-apps/plugin-sql';
 let db: Database | null = null;
 
 export async function getDb(): Promise<Database> {
+  if (typeof window === 'undefined') {
+    throw new Error('DB not available in SSR context');
+  }
   if (!db) {
     db = await Database.load('sqlite:restaurantOS.db');
   }
@@ -10,14 +13,24 @@ export async function getDb(): Promise<Database> {
 }
 
 export async function query<T>(sql: string, params: unknown[] = []): Promise<T[]> {
-  const database = await getDb();
-  const rows = await database.select<T[]>(sql, params);
-  return rows;
+  try {
+    const database = await getDb();
+    if (!database) return [];
+    const rows = await database.select<T[]>(sql, params);
+    return rows;
+  } catch {
+    return [];
+  }
 }
 
 export async function execute(sql: string, params: unknown[] = []): Promise<void> {
-  const database = await getDb();
-  await database.execute(sql, params);
+  try {
+    const database = await getDb();
+    if (!database) return;
+    await database.execute(sql, params);
+  } catch {
+    // Silently skip if DB not available
+  }
 }
 
 export async function withTransaction<T>(fn: () => Promise<T>): Promise<T> {
@@ -82,8 +95,8 @@ export function buildUpdateSql(table: string, data: Record<string, unknown>, id:
 }
 
 export async function runMigrations(): Promise<void> {
-  console.log("DB: Starting migrations...");
   try {
+    console.log("DB: Starting migrations...");
     const database = await getDb();
 
     // Settings table

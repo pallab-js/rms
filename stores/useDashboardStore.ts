@@ -14,6 +14,7 @@ const initialStats: DashboardStats = {
   yesterday_revenue: 0,
   active_orders: 0,
   pending_orders: 0,
+  active_orders_by_status: {},
   tables_occupied: 0,
   total_tables: 0,
   covers_today: 0,
@@ -52,6 +53,18 @@ export const useDashboardStore = create<DashboardState>((set) => ({
       // 3. Active & Pending Orders
       const activeRows = await query<{ count: number }>("SELECT COUNT(*) as count FROM orders WHERE status NOT IN ('completed', 'cancelled')")
       const pendingRows = await query<{ count: number }>("SELECT COUNT(*) as count FROM orders WHERE status = 'pending'")
+
+      // 3b. Active Orders by Status (for funnel)
+      const statusRows = await query<{ status: string; count: number }>(`
+        SELECT status, COUNT(*) as count FROM orders 
+        WHERE status NOT IN ('completed', 'cancelled') 
+        AND date(created_at) = date('now')
+        GROUP BY status
+      `)
+      const activeOrdersByStatus: Record<string, number> = {}
+      statusRows.forEach(row => {
+        activeOrdersByStatus[row.status] = row.count
+      })
 
       // 4. Tables
       const occupiedRows = await query<{ count: number }>("SELECT COUNT(*) as count FROM restaurant_tables WHERE status = 'occupied'")
@@ -94,6 +107,7 @@ export const useDashboardStore = create<DashboardState>((set) => ({
           yesterday_revenue: yesterdayRevRows[0]?.rev || 0,
           active_orders: activeRows[0]?.count || 0,
           pending_orders: pendingRows[0]?.count || 0,
+          active_orders_by_status: activeOrdersByStatus,
           tables_occupied: occupiedRows[0]?.count || 0,
           total_tables: totalTablesRows[0]?.count || 0,
           covers_today: coversRows[0]?.count || 0,

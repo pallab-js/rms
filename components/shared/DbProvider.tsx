@@ -1,7 +1,8 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
-import { runMigrations } from "@/lib/db"
+import { runMigrations, query } from "@/lib/db"
+import { useSettingsStore } from "@/stores/useSettingsStore"
 
 export default function DbProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false)
@@ -11,8 +12,15 @@ export default function DbProvider({ children }: { children: React.ReactNode }) 
     let mounted = true
     
     runMigrations()
-      .then(() => {
-        if (mounted) setReady(true)
+      .then(async () => {
+        if (mounted) {
+          const existing = await query<{key: string}>("SELECT key FROM settings LIMIT 1")
+          if (existing.length === 0) {
+            await useSettingsStore.getState().seedDefaults()
+          }
+          await useSettingsStore.getState().fetchSettings()
+          setReady(true)
+        }
       })
       .catch(err => {
         console.error("Failed to run migrations:", err)

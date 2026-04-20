@@ -262,6 +262,7 @@ export interface DashboardStats {
   yesterday_revenue: number;
   active_orders: number;
   pending_orders: number;
+  active_orders_by_status: Record<string, number>;
   tables_occupied: number;
   total_tables: number;
   covers_today: number;

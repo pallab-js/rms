@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager, Runtime};
-use uuid::Uuid;
+use chrono::Utc;
 
 #[tauri::command]
 pub async fn save_menu_image<R: Runtime>(app: AppHandle<R>, file_path: String) -> Result<String, String> {
@@ -14,7 +14,8 @@ pub async fn save_menu_image<R: Runtime>(app: AppHandle<R>, file_path: String) -
     
     let source_path = PathBuf::from(&file_path);
     let extension = source_path.extension().and_then(|e| e.to_str()).unwrap_or("png");
-    let file_name = format!("{}.{}", Uuid::new_v4(), extension);
+    let timestamp = Utc::now().format("%Y%m%d_%H%M%S_%f").to_string();
+    let file_name = format!("{}.{}", timestamp, extension);
     let dest_path = images_dir.join(&file_name);
     
     fs::copy(&source_path, &dest_path).map_err(|e| e.to_string())?;

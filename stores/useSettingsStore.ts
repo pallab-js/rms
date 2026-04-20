@@ -7,6 +7,7 @@ interface SettingsState {
   isLoading: boolean
   
   fetchSettings: () => Promise<void>
+  seedDefaults: () => Promise<void>
   updateSetting: (key: keyof SettingsData, value: string | number | boolean) => Promise<void>
   updateMultipleSettings: (data: Partial<SettingsData>) => Promise<void>
 }
@@ -58,6 +59,18 @@ export const useSettingsStore = create<SettingsState>((set) => ({
       console.error("Failed to fetch settings:", error)
     } finally {
       set({ isLoading: false })
+    }
+  },
+
+  seedDefaults: async () => {
+    try {
+      for (const [key, value] of Object.entries(defaultSettings)) {
+        const dbValue = typeof value === "boolean" ? (value ? "1" : "0") : String(value)
+        await execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", [key, dbValue])
+      }
+      console.log("Default settings seeded to DB")
+    } catch (error) {
+      console.error("Failed to seed default settings:", error)
     }
   },
 

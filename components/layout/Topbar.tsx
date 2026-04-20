@@ -20,7 +20,7 @@ export default function Topbar() {
   return (
     <header className="flex items-center justify-between px-6 border-b border-border h-16 bg-bg-surface/50 backdrop-blur-sm sticky top-0 z-10">
       <div className="flex items-center gap-4">
-        <h1 className="text-xl font-black text-text-primary uppercase tracking-tight">{getPageTitle()}</h1>
+        <h1 className="text-lg font-normal text-text-primary" style={{ lineHeight: '1.00' }}>{getPageTitle()}</h1>
       </div>
 
       <div className="flex items-center gap-6 flex-1 max-w-2xl mx-12">

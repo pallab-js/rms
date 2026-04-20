@@ -23,7 +23,7 @@ import {
   Tooltip, 
   ResponsiveContainer 
 } from "recharts"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -106,7 +106,7 @@ export default function DashboardPage() {
           <Card className="bg-bg-surface border-border">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="text-xs font-normal uppercase text-text-muted tracking-widest">Hourly Revenue</CardTitle>
+                <p className="text-[11px] font-normal uppercase text-text-muted tracking-[0.08em]">Hourly Revenue</p>
                 <CardDescription className="text-[10px]">Today&apos;s sales volume trend</CardDescription>
               </div>
               <History size={16} className="text-text-subtle" />
@@ -115,19 +115,19 @@ export default function DashboardPage() {
               {stats.hourly_sales.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={stats.hourly_sales}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2e3347" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#242424" vertical={false} />
                     <XAxis 
                       dataKey="hour" 
-                      stroke="#555b75" 
+                      stroke="#4d4d4d" 
                       fontSize={10} 
                       tickFormatter={(val) => `${val}:00`}
                     />
-                    <YAxis stroke="#555b75" fontSize={10} hide />
+                    <YAxis stroke="#4d4d4d" fontSize={10} hide />
                     <Tooltip 
-                      contentStyle={{ backgroundColor: '#1a1d27', border: '1px solid #2e3347', borderRadius: '8px' }}
-                      itemStyle={{ color: '#f59e0b', fontWeight: 'bold' }}
+                      contentStyle={{ backgroundColor: 'rgba(41,41,41,0.96)', border: '1px solid #2e2e2e', borderRadius: '8px', backdropFilter: 'blur(12px)' }}
+                      itemStyle={{ color: '#3ecf8e' }}
                     />
-                    <Bar dataKey="revenue" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="revenue" fill="#3ecf8e" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -151,7 +151,7 @@ export default function DashboardPage() {
           {/* Table Mini Map */}
           <Card className="bg-bg-surface border-border">
             <CardHeader>
-              <CardTitle className="text-xs font-normal uppercase text-text-muted tracking-widest">Table Status</CardTitle>
+              <p className="text-[11px] font-normal uppercase text-text-muted tracking-[0.08em]">Table Status</p>
             </CardHeader>
             <CardContent className="p-6 pt-0">
                <TableMiniMap />
@@ -166,10 +166,10 @@ export default function DashboardPage() {
           {/* Order Status Funnel */}
           <Card className="bg-bg-surface border-border">
             <CardHeader>
-              <CardTitle className="text-xs font-normal uppercase text-text-muted tracking-widest">Order Pipeline</CardTitle>
+              <p className="text-[11px] font-normal uppercase text-text-muted tracking-[0.08em]">Order Pipeline</p>
             </CardHeader>
             <CardContent className="p-6 pt-0">
-               <OrderStatusFunnel orders={stats.recent_orders} /> {/* Using recent orders as proxy or fetch active orders */}
+               <OrderStatusFunnel ordersByStatus={stats.active_orders_by_status} />
             </CardContent>
           </Card>
         </div>
@@ -179,7 +179,7 @@ export default function DashboardPage() {
           {/* Quick Actions */}
           <Card className="bg-bg-surface border-border">
             <CardHeader>
-              <CardTitle className="text-xs font-normal uppercase text-text-muted tracking-widest">Quick Actions</CardTitle>
+              <p className="text-[11px] font-normal uppercase text-text-muted tracking-[0.08em]">Quick Actions</p>
             </CardHeader>
             <CardContent className="p-4 pt-0">
                <QuickActions />

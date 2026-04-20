@@ -1,19 +1,23 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const circularFont = localFont({
+  src: [
+    { path: "../public/fonts/DM_Sans-Regular.woff2", weight: "400" },
+    { path: "../public/fonts/DM_Sans-Medium.woff2", weight: "500" },
+  ],
+  variable: "--font-sans",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const sourceCodePro = localFont({
+  src: "../public/fonts/SourceCodePro-Regular.woff2",
+  weight: "400",
+  variable: "--font-mono",
 });
 
 export const metadata: Metadata = {
@@ -29,9 +33,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
+      <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+      className={`${circularFont.variable} ${sourceCodePro.variable} h-full antialiased dark`}
     >
       <body className="h-full flex overflow-hidden bg-background text-foreground">
         <DbProvider>

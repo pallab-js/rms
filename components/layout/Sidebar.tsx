@@ -60,7 +60,7 @@ export default function Sidebar() {
     { group: "OPERATIONS", items: [
       { name: "Orders", href: "/orders", icon: Receipt, badge: pendingOrdersCount },
       { name: "Tables", href: "/tables", icon: Armchair },
-      { name: "Reservations", href: "/tables#reservations", icon: CalendarDays },
+      { name: "Reservations", href: "/tables?tab=reservations", icon: CalendarDays },
     ]},
     { group: "MANAGEMENT", items: [
       { name: "Menu", href: "/menu", icon: UtensilsCrossed },
@@ -94,7 +94,7 @@ export default function Sidebar() {
         {navItems.map((group) => (
           <div key={group.group} className="space-y-1">
             {!collapsed && (
-              <h3 className="px-3 text-xs font-semibold text-text-subtle uppercase tracking-wider mb-2">
+              <h3 className="px-3 text-xs font-normal text-text-subtle uppercase tracking-wider mb-2">
                 {group.group}
               </h3>
             )}
@@ -105,18 +105,18 @@ export default function Sidebar() {
                   key={item.name} 
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-md transition-colors relative group",
+                    "flex items-center gap-3 px-3 py-2 rounded-md transition-colors relative group weight-nav",
                     isActive 
-                      ? "bg-primary text-primary-foreground font-medium" 
+                      ? "bg-white/6 text-text-primary border-l-2 border-green-brand pl-[10px]" 
                       : "text-text-muted hover:bg-bg-hover hover:text-text-primary"
                   )}
                 >
-                  <item.icon size={20} className={cn(isActive ? "text-primary-foreground" : "text-text-muted group-hover:text-text-primary")} />
+                  <item.icon size={20} className={cn(isActive ? "text-green-brand" : "text-text-muted group-hover:text-text-primary")} />
                   {!collapsed && <span className="flex-1 truncate">{item.name}</span>}
                   {!collapsed && item.badge && (
                     <span className={cn(
                       "px-1.5 py-0.5 rounded text-[10px] font-bold",
-                      isActive ? "bg-white/20 text-white" : "bg-primary text-primary-foreground"
+                      isActive ? "bg-green-brand/10 text-green-brand border border-green-brand/20" : "bg-primary text-primary-foreground"
                     )}>
                       {item.badge}
                     </span>

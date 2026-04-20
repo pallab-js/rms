@@ -35,3 +35,10 @@ pub async fn export_database<R: Runtime>(app: AppHandle<R>, dest_path: String) -
 pub async fn get_app_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
 }
+
+#[tauri::command]
+pub async fn get_db_path<R: Runtime>(app: AppHandle<R>) -> Result<String, String> {
+    let app_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let db_path = app_dir.join("restaurantOS.db");
+    Ok(db_path.to_string_lossy().to_string())
+}

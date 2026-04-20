@@ -131,15 +131,6 @@
     font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
   }
   
-  /* Force weight discipline from blueprint */
-  h1, h2, h3, h4, h5, h6, .card-title, .kpi-value, span, p, div, td, th {
-    font-weight: 400 !important;
-  }
-  
-  button, a, .nav-link, [role="tab"] {
-    font-weight: 500 !important;
-  }
-
   /* Typography rules from blueprint */
   h1, h2, h3, .kpi-value {
     line-height: 1.00;
@@ -147,6 +138,9 @@
 }
 
 @layer components {
+  .weight-nav { font-weight: 500; }
+  .weight-body { font-weight: 400; }
+  
   .btn-primary {
     @apply bg-[#0f0f0f] text-[#fafafa] border border-[#fafafa] rounded-full px-8 py-2 text-sm font-medium transition-all active:scale-95 hover:opacity-85;
   }
