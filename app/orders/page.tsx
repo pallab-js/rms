@@ -7,6 +7,7 @@ import OrderBuilder from "@/components/orders/OrderBuilder"
 import KOTReceipt from "@/components/orders/KOTReceipt"
 import { useOrderStore } from "@/stores/useOrderStore"
 import { useSettingsStore } from "@/stores/useSettingsStore"
+import { FeatureErrorBoundary } from "@/components/layout/FeatureErrorBoundary"
 
 function OrdersContent() {
   const { orders } = useOrderStore()
@@ -37,8 +38,10 @@ function OrdersContent() {
 
 export default function OrdersPage() {
   return (
-    <Suspense fallback={<div className="p-8">Loading orders...</div>}>
-      <OrdersContent />
-    </Suspense>
+    <FeatureErrorBoundary name="Orders">
+      <Suspense fallback={<div className="p-8">Loading orders...</div>}>
+        <OrdersContent />
+      </Suspense>
+    </FeatureErrorBoundary>
   )
 }

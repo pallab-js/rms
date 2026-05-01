@@ -63,8 +63,17 @@ import InventoryItemForm from "@/components/inventory/InventoryItemForm"
 import TransactionForm from "@/components/inventory/TransactionForm"
 import TransactionHistory from "@/components/inventory/TransactionHistory"
 import InventoryCategoryManager from "@/components/inventory/InventoryCategoryManager"
+import { FeatureErrorBoundary } from "@/components/layout/FeatureErrorBoundary"
 
 export default function InventoryPage() {
+  return (
+    <FeatureErrorBoundary name="Inventory">
+      <InventoryContent />
+    </FeatureErrorBoundary>
+  )
+}
+
+function InventoryContent() {
   const { items, isLoading, fetchItems, fetchCategories, deleteItem } = useInventoryStore()
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState("")

@@ -55,8 +55,17 @@ import TableMap from "@/components/tables/TableMap"
 import TableForm from "@/components/tables/TableForm"
 import ReservationForm from "@/components/tables/ReservationForm"
 import ReservationTimeline from "@/components/tables/ReservationTimeline"
+import { FeatureErrorBoundary } from "@/components/layout/FeatureErrorBoundary"
 
 export default function TablesPage() {
+  return (
+    <FeatureErrorBoundary name="Floor Plan & Reservations">
+      <TablesContent />
+    </FeatureErrorBoundary>
+  )
+}
+
+function TablesContent() {
   const { 
     tables, 
     reservations, 

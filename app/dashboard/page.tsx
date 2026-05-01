@@ -33,9 +33,19 @@ import RecentOrders from "@/components/dashboard/RecentOrders"
 import TableMiniMap from "@/components/dashboard/TableMiniMap"
 import OrderStatusFunnel from "@/components/dashboard/OrderStatusFunnel"
 import QuickActions from "@/components/dashboard/QuickActions"
+import { FeatureErrorBoundary } from "@/components/layout/FeatureErrorBoundary"
+import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton"
 
 export default function DashboardPage() {
-  const { stats, fetchDashboardStats } = useDashboardStore()
+  return (
+    <FeatureErrorBoundary name="Mission Control">
+      <DashboardContent />
+    </FeatureErrorBoundary>
+  )
+}
+
+function DashboardContent() {
+  const { stats, fetchDashboardStats, isLoading } = useDashboardStore()
   const { settings } = useSettingsStore()
 
   useEffect(() => {
@@ -43,6 +53,10 @@ export default function DashboardPage() {
     const interval = setInterval(() => fetchDashboardStats(), REFRESH_INTERVALS.DASHBOARD)
     return () => clearInterval(interval)
   }, [fetchDashboardStats])
+
+  if (isLoading && stats.recent_orders.length === 0) {
+    return <DashboardSkeleton />
+  }
 
   const revTrend = stats.yesterday_revenue > 0 
     ? `${(((stats.today_revenue - stats.yesterday_revenue) / stats.yesterday_revenue) * 100).toFixed(1)}%` 

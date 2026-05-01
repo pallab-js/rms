@@ -51,6 +51,7 @@ pub async fn db_init(
         ("temp_store", "MEMORY"),
         ("foreign_keys", "ON"),
         ("busy_timeout", "5000"),
+        ("wal_autocheckpoint", "1000"),
     ];
 
     for (name, value) in optimizations {
