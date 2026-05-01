@@ -1,5 +1,5 @@
 import { create } from "zustand"
-import { dbInit, isDbReady } from "@/lib/db"
+import { dbInit, isDbReady, runMigrations } from "@/lib/db"
 
 interface AuthState {
   isAuthenticated: boolean
@@ -22,6 +22,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true, error: null })
     try {
       await dbInit(pin)
+      await runMigrations()
       set({ isAuthenticated: true, isLocked: false, isLoading: false })
     } catch (err) {
       console.error("Login failed:", err)

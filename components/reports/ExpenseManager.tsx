@@ -11,7 +11,8 @@ import {
   Trash2, 
   ArrowDownCircle, 
   ArrowUpCircle, 
-  BarChart3
+  BarChart3,
+  Download
 } from "lucide-react"
 import { 
   Table, 
@@ -43,6 +44,7 @@ import {
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
+import { exportToExcel } from "@/lib/export"
 
 const expenseSchema = z.object({
   category: z.string().min(1),
@@ -129,12 +131,21 @@ export default function ExpenseManager() {
             <CardTitle className="text-sm font-black uppercase tracking-widest text-text-muted">Expense Logs</CardTitle>
             <CardDescription className="text-[10px]">Track all operational expenditures.</CardDescription>
           </div>
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger>
-              <Button size="sm" className="gap-2 h-8 uppercase font-black text-[10px] tracking-widest">
-                <Plus size={14} /> Add Expense
-              </Button>
-            </DialogTrigger>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-2 h-8 uppercase font-black text-[10px] tracking-widest border-border"
+              onClick={() => exportToExcel(expenses, "Expenses_Report", "Expenses")}
+            >
+              <Download size={14} /> Export
+            </Button>
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+              <DialogTrigger>
+                <Button size="sm" className="gap-2 h-8 uppercase font-black text-[10px] tracking-widest">
+                  <Plus size={14} /> Add Expense
+                </Button>
+              </DialogTrigger>
             <DialogContent className="bg-bg-surface border-border">
               <DialogHeader>
                 <DialogTitle>Add New Expense</DialogTitle>
@@ -180,6 +191,7 @@ export default function ExpenseManager() {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <Table>

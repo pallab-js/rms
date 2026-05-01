@@ -21,6 +21,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import TableSkeleton from "@/components/shared/TableSkeleton"
+import { exportToExcel } from "@/lib/export"
+import { Button } from "@/components/ui/button"
+import { Download } from "lucide-react"
 
 export default function MenuPerformance() {
   const { menuPerformance, isLoading } = useReportStore()
@@ -58,8 +61,16 @@ export default function MenuPerformance() {
 
         {/* Full Performance Table */}
         <Card className="lg:col-span-2 bg-bg-surface border-border overflow-hidden">
-          <CardHeader className="border-b border-border/50">
+          <CardHeader className="border-b border-border/50 flex flex-row items-center justify-between py-4">
             <CardTitle className="text-sm font-black uppercase tracking-widest text-text-muted">Full Performance List</CardTitle>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-2 h-8 text-[10px] uppercase font-black tracking-widest border-border"
+              onClick={() => exportToExcel(menuPerformance, "Menu_Performance_Report", "Menu")}
+            >
+              <Download size={14} /> Export
+            </Button>
           </CardHeader>
           <CardContent className="p-0">
              <Table>

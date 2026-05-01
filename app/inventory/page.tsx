@@ -13,7 +13,8 @@ import {
   AlertTriangle,
   ChevronRight,
   Edit,
-  ShoppingBag
+  ShoppingBag,
+  Download
 } from "lucide-react"
 import { 
   flexRender, 
@@ -58,6 +59,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import { Separator } from "@/components/ui/separator"
 import TableSkeleton from "@/components/shared/TableSkeleton"
+import { exportToExcel } from "@/lib/export"
 
 import InventoryItemForm from "@/components/inventory/InventoryItemForm"
 import TransactionForm from "@/components/inventory/TransactionForm"
@@ -247,6 +249,13 @@ function InventoryContent() {
           <p className="text-text-muted font-medium">Track and manage supplies, stock levels and costs.</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            className="gap-2 border-border h-10 uppercase font-medium text-[10px] tracking-widest"
+            onClick={() => exportToExcel(items, "Inventory_Report", "Inventory")}
+          >
+            <Download size={14} /> Export
+          </Button>
           <Button 
             variant="outline" 
             className="gap-2 border-border h-10 uppercase font-medium text-[10px] tracking-widest"

@@ -13,7 +13,8 @@ import {
   Clock, 
   Printer, 
   CheckCircle2,
-  ArrowRightCircle
+  ArrowRightCircle,
+  Download
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,6 +27,7 @@ import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
 import { format } from "date-fns"
 import CustomerReceipt from "@/components/billing/CustomerReceipt"
+import { generateOrderPDF } from "@/lib/pdf"
 
 export default function BillingPage() {
   const { pendingBills, paymentHistory, isLoading, fetchPendingBills, fetchPaymentHistory, processPayment } = useBillingStore()
@@ -175,9 +177,18 @@ export default function BillingPage() {
                 <h3 className="text-2xl font-black text-text-primary uppercase tracking-tight">Process Bill</h3>
                 <p className="text-xs text-text-muted font-bold uppercase tracking-widest">Order: {selectedOrder.order_number}</p>
               </div>
-              <Button variant="outline" className="gap-2 border-border h-10 uppercase font-black text-[10px] tracking-widest" onClick={() => window.print()}>
-                <Printer size={16} /> Print Draft Bill
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  className="gap-2 border-border h-10 uppercase font-black text-[10px] tracking-widest" 
+                  onClick={() => generateOrderPDF(selectedOrder, settings)}
+                >
+                  <Download size={16} /> Download PDF
+                </Button>
+                <Button variant="outline" className="gap-2 border-border h-10 uppercase font-black text-[10px] tracking-widest" onClick={() => window.print()}>
+                  <Printer size={16} /> Print Draft Bill
+                </Button>
+              </div>
             </div>
 
             <div className="flex-1 flex gap-8 p-8 overflow-hidden">

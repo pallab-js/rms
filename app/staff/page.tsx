@@ -15,7 +15,8 @@ import {
   Calendar as CalendarIcon,
   Edit,
   Trash2,
-  CheckCircle2
+  CheckCircle2,
+  Download
 } from "lucide-react"
 import { format, addMonths, subMonths, addDays, subDays } from "date-fns"
 import { useStaffStore } from "@/stores/useStaffStore"
@@ -49,6 +50,7 @@ import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { Staff } from "@/types"
+import { exportToExcel } from "@/lib/export"
 
 import StaffForm from "@/components/staff/StaffForm"
 import AttendanceTable from "@/components/staff/AttendanceTable"
@@ -170,6 +172,14 @@ export default function StaffPage() {
               />
             </div>
             <div className="flex items-center gap-4">
+               <Button 
+                 variant="ghost" 
+                 size="sm" 
+                 className="gap-2 h-8 uppercase font-medium text-[10px] tracking-widest text-text-muted hover:text-primary"
+                 onClick={() => exportToExcel(staff, "Staff_Directory", "Staff")}
+               >
+                 <Download size={14} /> Export
+               </Button>
                <div className="flex items-center gap-1.5">
                   <span className="text-[10px] text-text-muted font-normal uppercase">Total:</span>
                   <span className="text-sm font-normal text-text-primary">{staff.length}</span>
