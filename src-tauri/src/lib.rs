@@ -22,7 +22,9 @@ pub mod commands;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
-    .plugin(tauri_plugin_sql::Builder::default().build())
+    .manage(commands::db::DbState {
+      conn: std::sync::Mutex::new(None),
+    })
     .plugin(tauri_plugin_shell::init())
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_fs::init())
@@ -37,6 +39,9 @@ pub fn run() {
       Ok(())
     })
     .invoke_handler(tauri::generate_handler![
+      commands::db::db_init,
+      commands::db::db_query,
+      commands::db::db_execute,
       commands::settings::get_db_info,
       commands::settings::export_database,
       commands::settings::get_app_version,

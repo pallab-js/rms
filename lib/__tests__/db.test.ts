@@ -80,7 +80,7 @@ describe('buildUpdateSql', () => {
   })
 
   it('throws for invalid table', () => {
-    expect(() => buildUpdateSql('invalid_table', { name: 'test' }, 1)).toThrow()
+    expect(() => buildUpdateSql('invalid_table' as any, { name: 'test' }, 1)).toThrow()
   })
 
   it('throws for no valid fields', () => {
