@@ -44,6 +44,7 @@ pub fn run() {
       commands::db::db_execute,
       commands::settings::get_db_info,
       commands::settings::export_database,
+      commands::settings::create_backup,
       commands::settings::get_app_version,
       commands::settings::get_db_path,
       commands::menu::save_menu_image,

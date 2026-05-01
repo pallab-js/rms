@@ -6,7 +6,6 @@ const nextConfig: NextConfig = {
   trailingSlash: true,
   reactStrictMode: true,
   images: { unoptimized: true, remotePatterns: [] },
-  typescript: { ignoreBuildErrors: true },
 };
 
 export default nextConfig;

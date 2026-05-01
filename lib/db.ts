@@ -11,6 +11,8 @@ export async function dbInit(pin: string): Promise<void> {
     isInitialized = true;
     console.log('[DB] Initialized with encryption');
     await runMigrations();
+    // Create backup on successful init
+    invoke("create_backup").catch(err => console.error("[DB_BACKUP_ERROR]", err));
   } catch (error) {
     isInitialized = false;
     throw error;
@@ -57,6 +59,24 @@ export async function withTransaction<T>(fn: () => Promise<T>): Promise<T> {
   } catch (error) {
     await execute("ROLLBACK");
     throw error;
+  }
+}
+
+export async function logAudit(
+  table: string,
+  id: number,
+  action: 'INSERT' | 'UPDATE' | 'DELETE',
+  newData: unknown = null,
+  oldData: unknown = null
+): Promise<void> {
+  try {
+    await execute(
+      "INSERT INTO audit_logs (table_name, record_id, action, new_data, old_data) VALUES (?, ?, ?, ?, ?)",
+      [table, id, action, newData ? JSON.stringify(newData) : null, oldData ? JSON.stringify(oldData) : null]
+    );
+  } catch (error) {
+    console.error("[AUDIT_LOG_ERROR]", error);
+    // Don't throw, we don't want to break the main app flow if audit logging fails
   }
 }
 
@@ -322,6 +342,36 @@ export async function runMigrations(): Promise<void> {
         name: 'Add party_size to orders',
         statements: [
           `ALTER TABLE orders ADD COLUMN party_size INTEGER DEFAULT 1;`
+        ]
+      },
+      {
+        version: 3,
+        name: 'Index Optimizations',
+        statements: [
+          `CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);`,
+          `CREATE INDEX IF NOT EXISTS idx_payments_order_id ON payments(order_id);`,
+          `CREATE INDEX IF NOT EXISTS idx_inv_trans_item_date ON inventory_transactions(item_id, created_at);`,
+          `CREATE INDEX IF NOT EXISTS idx_menu_items_cat_active ON menu_items(category_id, is_active);`,
+          `CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date);`,
+          `CREATE INDEX IF NOT EXISTS idx_reservations_date_status ON reservations(reserved_date, status);`
+        ]
+      },
+      {
+        version: 4,
+        name: 'Audit Logging',
+        statements: [
+          `CREATE TABLE IF NOT EXISTS audit_logs (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            table_name  TEXT NOT NULL,
+            record_id   INTEGER NOT NULL,
+            action      TEXT NOT NULL, -- INSERT, UPDATE, DELETE
+            old_data    TEXT,          -- JSON
+            new_data    TEXT,          -- JSON
+            user_id     INTEGER,       -- Optional for now
+            created_at  TEXT DEFAULT (datetime('now'))
+          );`,
+          `CREATE INDEX IF NOT EXISTS idx_audit_table_record ON audit_logs(table_name, record_id);`,
+          `CREATE INDEX IF NOT EXISTS idx_audit_created_at ON audit_logs(created_at);`
         ]
       }
     ];
