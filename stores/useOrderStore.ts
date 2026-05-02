@@ -1,5 +1,5 @@
 import { create } from "zustand"
-import { query, execute, withTransaction } from "@/lib/db"
+import { query, withTransaction, upsert } from "@/lib/db"
 import { Order, OrderItem, OrderType, OrderStatus, MenuItem } from "@/types"
 import { invoke } from "@tauri-apps/api/core"
 import { useSettingsStore } from "./useSettingsStore"
@@ -197,27 +197,36 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
     
     try {
       await withTransaction(async () => {
-        await execute(`
-          INSERT INTO orders (order_number, table_id, party_size, order_type, status, customer_name, customer_phone, notes, subtotal, discount_type, discount_val, tax_amount, total)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, [
-          order_number, newOrder.table_id, newOrder.party_size, newOrder.order_type, "pending", 
-          newOrder.customer_name, newOrder.customer_phone, newOrder.notes,
-          subtotal, newOrder.discount_type, newOrder.discount_val, tax_amt, total
-        ])
+        const result = await upsert("orders", {
+          order_number, 
+          table_id: newOrder.table_id, 
+          party_size: newOrder.party_size, 
+          order_type: newOrder.order_type, 
+          status: "pending", 
+          customer_name: newOrder.customer_name, 
+          customer_phone: newOrder.customer_phone, 
+          notes: newOrder.notes,
+          subtotal, 
+          discount_type: newOrder.discount_type, 
+          discount_val: newOrder.discount_val, 
+          tax_amount: tax_amt, 
+          total
+        })
         
-        const orderResult = await query<{ id: number }>("SELECT id FROM orders WHERE order_number = ?", [order_number])
-        const order_id = orderResult[0].id
+        const order_id = Number(result.lastInsertRowid)
         
         for (const item of newOrder.items) {
-          await execute(`
-            INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price, status)
-            VALUES (?, ?, ?, ?, ?)
-          `, [order_id, item.menu_item_id, item.quantity, item.unit_price, "pending"])
+          await upsert("order_items", {
+            order_id, 
+            menu_item_id: item.menu_item_id, 
+            quantity: item.quantity, 
+            unit_price: item.unit_price, 
+            status: "pending"
+          })
         }
         
         if (newOrder.table_id) {
-          await execute("UPDATE restaurant_tables SET status = 'occupied' WHERE id = ?", [newOrder.table_id])
+          await upsert("restaurant_tables", { status: 'occupied' }, newOrder.table_id)
         }
       })
       
@@ -232,13 +241,13 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
 
   updateOrderStatus: async (id, status) => {
     try {
-      await execute("UPDATE orders SET status = ? WHERE id = ?", [status, id])
+      await upsert("orders", { status }, id)
       
       // If completed or cancelled, free the table
       if (status === "completed" || status === "cancelled") {
         const order = get().orders.find(o => o.id === id)
         if (order?.table_id) {
-          await execute("UPDATE restaurant_tables SET status = 'available' WHERE id = ?", [order.table_id])
+          await upsert("restaurant_tables", { status: 'available' }, order.table_id)
         }
       }
       

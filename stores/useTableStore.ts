@@ -1,5 +1,5 @@
 import { create } from "zustand"
-import { query, execute, buildUpdateSql } from "@/lib/db"
+import { query, execute, upsert, dbDelete } from "@/lib/db"
 import { RestaurantTable, Reservation, TableStatus, ReservationStatus } from "@/types"
 import { format } from "date-fns"
 
@@ -68,10 +68,7 @@ export const useTableStore = create<TableState>((set, get) => ({
 
   addTable: async (table) => {
     try {
-      await execute(
-        "INSERT INTO restaurant_tables (table_number, capacity, section, status, shape, pos_x, pos_y) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        [table.table_number, table.capacity, table.section, table.status, table.shape, table.pos_x, table.pos_y]
-      )
+      await upsert("restaurant_tables", table)
       await get().fetchTables()
     } catch (err) {
       console.error("Failed to add table:", err)
@@ -81,8 +78,7 @@ export const useTableStore = create<TableState>((set, get) => ({
 
   updateTable: async (id, table) => {
     try {
-      const { sql, params } = buildUpdateSql("restaurant_tables", table, id)
-      await execute(sql, params)
+      await upsert("restaurant_tables", table, id)
       await get().fetchTables()
     } catch (err) {
       console.error("Failed to update table:", err)
@@ -92,7 +88,7 @@ export const useTableStore = create<TableState>((set, get) => ({
 
   updateTablePosition: async (id, x, y) => {
     try {
-      await execute("UPDATE restaurant_tables SET pos_x = ?, pos_y = ? WHERE id = ?", [x, y, id])
+      await upsert("restaurant_tables", { pos_x: x, pos_y: y }, id)
       set((state) => ({
         tables: state.tables.map(t => t.id === id ? { ...t, pos_x: x, pos_y: y } : t)
       }))
@@ -104,7 +100,7 @@ export const useTableStore = create<TableState>((set, get) => ({
 
   updateTableStatus: async (id, status) => {
     try {
-      await execute("UPDATE restaurant_tables SET status = ? WHERE id = ?", [status, id])
+      await upsert("restaurant_tables", { status }, id)
       set((state) => ({
         tables: state.tables.map(t => t.id === id ? { ...t, status } : t)
       }))
@@ -116,7 +112,7 @@ export const useTableStore = create<TableState>((set, get) => ({
 
   deleteTable: async (id) => {
     try {
-      await execute("DELETE FROM restaurant_tables WHERE id = ?", [id])
+      await dbDelete("restaurant_tables", id)
       await get().fetchTables()
     } catch (err) {
       console.error("Failed to delete table:", err)
@@ -126,10 +122,7 @@ export const useTableStore = create<TableState>((set, get) => ({
 
   addReservation: async (res) => {
     try {
-      await execute(
-        "INSERT INTO reservations (table_id, guest_name, guest_phone, party_size, reserved_date, reserved_time, duration_min, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [res.table_id, res.guest_name, res.guest_phone, res.party_size, res.reserved_date, res.reserved_time, res.duration_min, res.status, res.notes]
-      )
+      await upsert("reservations", res)
       await get().fetchReservations()
     } catch (err) {
       console.error("Failed to add reservation:", err)
@@ -139,8 +132,7 @@ export const useTableStore = create<TableState>((set, get) => ({
 
   updateReservation: async (id, res) => {
     try {
-      const { sql, params } = buildUpdateSql("reservations", res, id)
-      await execute(sql, params)
+      await upsert("reservations", res, id)
       await get().fetchReservations()
     } catch (err) {
       console.error("Failed to update reservation:", err)
@@ -150,7 +142,7 @@ export const useTableStore = create<TableState>((set, get) => ({
 
   updateReservationStatus: async (id, status) => {
     try {
-      await execute("UPDATE reservations SET status = ? WHERE id = ?", [status, id])
+      await upsert("reservations", { status }, id)
       set((state) => ({
         reservations: state.reservations.map(r => r.id === id ? { ...r, status } : r)
       }))
@@ -162,7 +154,7 @@ export const useTableStore = create<TableState>((set, get) => ({
 
   deleteReservation: async (id) => {
     try {
-      await execute("DELETE FROM reservations WHERE id = ?", [id])
+      await dbDelete("reservations", id)
       await get().fetchReservations()
     } catch (err) {
       console.error("Failed to delete reservation:", err)

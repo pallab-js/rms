@@ -1,5 +1,5 @@
 import { create } from "zustand"
-import { query, execute } from "@/lib/db"
+import { query, setDbSetting } from "@/lib/db"
 import { SettingsData, SettingEntry } from "@/types"
 
 interface SettingsState {
@@ -66,7 +66,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     try {
       for (const [key, value] of Object.entries(defaultSettings)) {
         const dbValue = typeof value === "boolean" ? (value ? "1" : "0") : String(value)
-        await execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", [key, dbValue])
+        await setDbSetting(key, dbValue)
       }
       console.log("Default settings seeded to DB")
     } catch (error) {
@@ -77,7 +77,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   updateSetting: async (key, value) => {
     try {
       const dbValue = typeof value === "boolean" ? (value ? "1" : "0") : String(value)
-      await execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", [key, dbValue])
+      await setDbSetting(key, dbValue)
       set((state) => ({
         settings: { ...state.settings, [key]: value }
       }))
@@ -91,7 +91,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     try {
       for (const [key, value] of Object.entries(data)) {
         const dbValue = typeof value === "boolean" ? (value ? "1" : "0") : String(value)
-        await execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", [key, dbValue])
+        await setDbSetting(key, dbValue)
       }
       set((state) => ({
         settings: { ...state.settings, ...data }

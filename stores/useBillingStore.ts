@@ -1,5 +1,5 @@
 import { create } from "zustand"
-import { query, execute, withTransaction } from "@/lib/db"
+import { query, withTransaction, upsert } from "@/lib/db"
 import { Order, Payment, OrderItem } from "@/types"
 import { format } from "date-fns"
 
@@ -72,19 +72,15 @@ export const useBillingStore = create<BillingState>((set, get) => ({
       const tableId = order?.table_id
       
       await withTransaction(async () => {
-        await execute(`
-          INSERT INTO payments (order_id, amount_paid, payment_method, change_given, reference_no, notes)
-          VALUES (?, ?, ?, ?, ?, ?)
-        `, [orderId, data.amount_paid, data.payment_method, data.change_given, data.reference_no, data.notes])
+        await upsert("payments", data)
 
-        await execute(`
-          UPDATE orders 
-          SET status = 'completed', completed_at = datetime('now') 
-          WHERE id = ?
-        `, [orderId])
+        await upsert("orders", { 
+          status: 'completed', 
+          completed_at: format(new Date(), "yyyy-MM-dd HH:mm:ss") 
+        }, orderId)
 
         if (tableId) {
-          await execute("UPDATE restaurant_tables SET status = 'available' WHERE id = ?", [tableId])
+          await upsert("restaurant_tables", { status: 'available' }, tableId)
         }
       })
 

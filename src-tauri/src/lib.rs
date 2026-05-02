@@ -40,8 +40,12 @@ pub fn run() {
     })
     .invoke_handler(tauri::generate_handler![
       commands::db::db_init,
+      commands::db::db_close,
       commands::db::db_query,
       commands::db::db_execute,
+      commands::db::db_upsert,
+      commands::db::db_delete,
+      commands::db::db_set_setting,
       commands::settings::get_db_info,
       commands::settings::export_database,
       commands::settings::create_backup,

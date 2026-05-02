@@ -4,6 +4,12 @@ use serde_json::Value;
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager, State};
 use std::path::PathBuf;
+use pbkdf2::pbkdf2_hmac;
+use sha2::Sha256;
+
+// Static salt for key derivation. In production, this should be unique per installation.
+const SALT: &[u8] = b"restaurant_os_stable_salt_v1";
+const ITERATIONS: u32 = 100_000;
 
 pub struct DbState {
     pub conn: Mutex<Option<Connection>>,
@@ -32,6 +38,11 @@ pub async fn db_init(
         return Ok(());
     }
 
+    // Derive a secure key from the PIN using PBKDF2
+    let mut derived_key = [0u8; 32];
+    pbkdf2_hmac::<Sha256>(pin.as_bytes(), SALT, ITERATIONS, &mut derived_key);
+    let key_hex = hex::encode(derived_key);
+
     let app_dir = app.path().app_data_dir().map_err(|_| "Could not find app data directory")?;
     if !app_dir.exists() {
         std::fs::create_dir_all(&app_dir).map_err(|e| e.to_string())?;
@@ -40,8 +51,8 @@ pub async fn db_init(
     
     let conn = Connection::open(db_path).map_err(|e| e.to_string())?;
     
-    // Set encryption key
-    conn.pragma_update(None, "key", pin).map_err(|e| e.to_string())?;
+    // Set encryption key (derived from PIN)
+    conn.pragma_update(None, "key", &key_hex).map_err(|e| e.to_string())?;
     
     // Apply optimizations
     let optimizations = [
@@ -66,11 +77,29 @@ pub async fn db_init(
 }
 
 #[tauri::command]
+pub async fn db_close(
+    state: State<'_, DbState>,
+) -> Result<(), String> {
+    let mut conn_lock = state.conn.lock().map_err(|_| "Failed to lock database state")?;
+    *conn_lock = None;
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn db_query(
     state: State<'_, DbState>,
     sql: String,
     params: Vec<Value>,
 ) -> Result<Vec<serde_json::Map<String, Value>>, String> {
+    // Basic Security: Block destructive commands from generic query
+    let forbidden = ["DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "CREATE", "TRUNCATE"];
+    let sql_upper = sql.to_uppercase();
+    for word in forbidden {
+        if sql_upper.contains(word) {
+            return Err(format!("Destructive command '{}' not allowed in db_query", word));
+        }
+    }
+
     let conn_lock = state.conn.lock().map_err(|_| "Failed to lock database state")?;
     let conn = conn_lock.as_ref().ok_or("Database not initialized")?;
 
@@ -100,6 +129,15 @@ pub async fn db_execute(
     sql: String,
     params: Vec<Value>,
 ) -> Result<ExecuteResult, String> {
+    // Basic Security: Only allow specific DML patterns, block DDL
+    let forbidden = ["DROP", "ALTER", "CREATE", "TRUNCATE"];
+    let sql_upper = sql.to_uppercase();
+    for word in forbidden {
+        if sql_upper.contains(word) {
+            return Err(format!("DDL command '{}' not allowed in db_execute", word));
+        }
+    }
+
     let conn_lock = state.conn.lock().map_err(|_| "Failed to lock database state")?;
     let conn = conn_lock.as_ref().ok_or("Database not initialized")?;
 
@@ -115,6 +153,127 @@ pub async fn db_execute(
     Ok(ExecuteResult {
         rows_affected,
         last_insert_id,
+    })
+}
+
+#[tauri::command]
+pub async fn db_upsert(
+    state: State<'_, DbState>,
+    table: String,
+    data: serde_json::Map<String, Value>,
+    id: Option<i64>,
+) -> Result<ExecuteResult, String> {
+    // 1. Validation
+    let safe_tables = [
+        "menu_categories", "menu_items", "modifiers", "restaurant_tables", 
+        "reservations", "orders", "order_items", "payments", 
+        "inventory_categories", "inventory_items", "inventory_transactions", 
+        "staff", "attendance", "expenses", "settings"
+    ];
+
+    if !safe_tables.contains(&table.as_str()) {
+        return Err(format!("Unsafe table name: {}", table));
+    }
+
+    let conn_lock = state.conn.lock().map_err(|_| "Failed to lock database state")?;
+    let conn = conn_lock.as_ref().ok_or("Database not initialized")?;
+
+    // 2. Build SQL
+    let mut columns = Vec::new();
+    let mut values = Vec::new();
+
+    for (key, val) in data {
+        // Basic column name validation (alphanumeric + underscore)
+        if !key.chars().all(|c| c.is_alphanumeric() || c == '_') {
+             return Err(format!("Invalid column name: {}", key));
+        }
+        columns.push(key);
+        values.push(json_to_rusqlite(&val));
+    }
+
+    if columns.is_empty() {
+        return Err("No data provided for upsert".into());
+    }
+
+    let (sql, rows_affected) = if let Some(record_id) = id {
+        // UPDATE
+        let set_clause = columns.iter()
+            .map(|col| format!("{} = ?", col))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let sql = format!("UPDATE {} SET {} WHERE id = ?", table, set_clause);
+        
+        let mut params = values;
+        params.push(rusqlite::types::Value::Integer(record_id));
+        
+        let affected = conn.execute(&sql, rusqlite::params_from_iter(params)).map_err(|e| e.to_string())?;
+        (sql, affected)
+    } else {
+        // INSERT
+        let col_names = columns.join(", ");
+        let placeholders = vec!["?"; columns.len()].join(", ");
+        let sql = format!("INSERT INTO {} ({}) VALUES ({})", table, col_names, placeholders);
+        
+        let affected = conn.execute(&sql, rusqlite::params_from_iter(values)).map_err(|e| e.to_string())?;
+        (sql, affected)
+    };
+
+    let last_insert_id = if rows_affected > 0 {
+        Some(conn.last_insert_rowid())
+    } else {
+        None
+    };
+
+    Ok(ExecuteResult {
+        rows_affected,
+        last_insert_id,
+    })
+}
+
+#[tauri::command]
+pub async fn db_delete(
+    state: State<'_, DbState>,
+    table: String,
+    id: i64,
+) -> Result<ExecuteResult, String> {
+    let safe_tables = [
+        "menu_categories", "menu_items", "modifiers", "restaurant_tables", 
+        "reservations", "orders", "order_items", "payments", 
+        "inventory_categories", "inventory_items", "inventory_transactions", 
+        "staff", "attendance", "expenses", "settings"
+    ];
+
+    if !safe_tables.contains(&table.as_str()) {
+        return Err(format!("Unsafe table name: {}", table));
+    }
+
+    let conn_lock = state.conn.lock().map_err(|_| "Failed to lock database state")?;
+    let conn = conn_lock.as_ref().ok_or("Database not initialized")?;
+
+    let sql = format!("DELETE FROM {} WHERE id = ?", table);
+    let affected = conn.execute(&sql, params![id]).map_err(|e| e.to_string())?;
+
+    Ok(ExecuteResult {
+        rows_affected: affected,
+        last_insert_id: None,
+    })
+}
+
+#[tauri::command]
+pub async fn db_set_setting(
+    state: State<'_, DbState>,
+    key: String,
+    value: String,
+) -> Result<ExecuteResult, String> {
+    let conn_lock = state.conn.lock().map_err(|_| "Failed to lock database state")?;
+    let conn = conn_lock.as_ref().ok_or("Database not initialized")?;
+
+    let sql = "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)";
+    let affected = conn.execute(sql, params![key, value]).map_err(|e| e.to_string())?;
+
+    Ok(ExecuteResult {
+        rows_affected: affected,
+        last_insert_id: None,
     })
 }
 

@@ -1,5 +1,5 @@
 import { create } from "zustand"
-import { query, execute, withTransaction } from "@/lib/db"
+import { query, withTransaction, upsert, dbDelete } from "@/lib/db"
 import { InventoryCategory, InventoryItem, InventoryTransaction, TransactionType } from "@/types"
 
 interface InventoryState {
@@ -82,63 +82,57 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   },
 
   addCategory: async (name) => {
-    await execute("INSERT INTO inventory_categories (name) VALUES (?)", [name])
+    await upsert("inventory_categories", { name })
     await get().fetchCategories()
   },
 
   deleteCategory: async (id) => {
-    await execute("DELETE FROM inventory_categories WHERE id = ?", [id])
+    await dbDelete("inventory_categories", id)
     await get().fetchCategories()
   },
 
   addItem: async (item) => {
-    await execute(`
-      INSERT INTO inventory_items (category_id, name, unit, current_stock, min_stock_alert, cost_per_unit, supplier_name, supplier_phone, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [item.category_id, item.name, item.unit, item.current_stock, item.min_stock_alert, item.cost_per_unit, item.supplier_name, item.supplier_phone, item.notes])
+    await upsert("inventory_items", item)
     await get().fetchItems()
   },
 
   updateItem: async (id, item) => {
-    const fields: string[] = []
-    const params: (string | number | null)[] = []
-    Object.entries(item).forEach(([key, value]) => {
-      if (key === "id" || key === "category_name" || key === "created_at" || key === "updated_at") return
-      fields.push(`${key} = ?`)
-      params.push(value as string | number | null)
-    })
-    params.push(id)
-    await execute(`UPDATE inventory_items SET ${fields.join(", ")}, updated_at = datetime('now') WHERE id = ?`, params)
+    const data = { ...item }
+    // @ts-ignore
+    delete data.category_name
+    // @ts-ignore
+    delete data.created_at
+    // @ts-ignore
+    delete data.updated_at
+    
+    await upsert("inventory_items", data, id)
     await get().fetchItems()
   },
 
   deleteItem: async (id) => {
-    await execute("DELETE FROM inventory_items WHERE id = ?", [id])
+    await dbDelete("inventory_items", id)
     await get().fetchItems()
   },
 
   recordTransaction: async (itemId, type, qty, notes) => {
     try {
       await withTransaction(async () => {
-        await execute(`
-          INSERT INTO inventory_transactions (item_id, type, quantity, notes)
-          VALUES (?, ?, ?, ?)
-        `, [itemId, type, qty, notes])
+        await upsert("inventory_transactions", { item_id: itemId, type, quantity: qty, notes })
 
-        let stockChange = qty
-        if (type === "usage" || type === "waste") stockChange = -qty
-        
-        let updateSql = "UPDATE inventory_items SET current_stock = current_stock + ?"
-        const params: (string | number)[] = [stockChange]
-        
-        if (type === "restock") {
-          updateSql += ", last_restocked = datetime('now')"
+        const items = await query<InventoryItem>("SELECT current_stock FROM inventory_items WHERE id = ?", [itemId])
+        if (items.length > 0) {
+          let stockChange = qty
+          if (type === "usage" || type === "waste") stockChange = -qty
+          
+          const newStock = (items[0].current_stock || 0) + stockChange
+          const updateData: Partial<InventoryItem> = { current_stock: newStock }
+          
+          if (type === "restock") {
+            updateData.last_restocked = new Date().toISOString()
+          }
+          
+          await upsert("inventory_items", updateData, itemId)
         }
-        
-        updateSql += " WHERE id = ?"
-        params.push(itemId)
-        
-        await execute(updateSql, params)
       })
       
       await get().fetchItems()

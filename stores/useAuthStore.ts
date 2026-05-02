@@ -1,5 +1,5 @@
 import { create } from "zustand"
-import { dbInit, isDbReady, runMigrations } from "@/lib/db"
+import { dbInit, isDbReady, runMigrations, dbClose } from "@/lib/db"
 
 interface AuthState {
   isAuthenticated: boolean
@@ -35,10 +35,15 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  logout: () => {
-    // Note: Full logout would require closing the DB connection in Rust
-    // For now, we just lock the UI
-    set({ isLocked: true })
+  logout: async () => {
+    try {
+      await dbClose()
+      set({ isLocked: true, isAuthenticated: false })
+    } catch (err) {
+      console.error("Logout failed:", err)
+      // Still lock the UI
+      set({ isLocked: true })
+    }
   },
 
   checkStatus: () => {

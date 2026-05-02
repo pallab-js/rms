@@ -32,29 +32,6 @@ export function validateColumns<T extends SafeTable>(table: T, data: Record<stri
   return validFields;
 }
 
-export function buildUpdateSql<T extends SafeTable>(
-  table: T,
-  data: Record<string, unknown>,
-  id: number
-): { sql: string; params: unknown[] } {
-  if (!SAFE_TABLES.includes(table)) {
-    throw new Error(`[SECURITY] Unsafe table name: ${table}`);
-  }
-  const fields = validateColumns(table, data);
-  if (fields.length === 0) {
-    throw new Error(`No valid fields to update for table: ${table}`);
-  }
-  const setClauses = fields.map(f => `${f} = ?`).join(', ');
-  const params = fields.map(f => {
-    const val = data[f];
-    if (typeof val === 'boolean') return val ? 1 : 0;
-    if (val === null || val === undefined) return null;
-    return val;
-  });
-  params.push(id);
-  return { sql: `UPDATE ${table} SET ${setClauses} WHERE id = ?`, params };
-}
-
 export async function logAudit(
   table: string,
   id: number,

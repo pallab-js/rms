@@ -1,5 +1,5 @@
 import { create } from "zustand"
-import { query, execute } from "@/lib/db"
+import { query, execute, upsert, dbDelete } from "@/lib/db"
 import { 
   Expense, 
   SalesSummary, 
@@ -144,15 +144,12 @@ export const useReportStore = create<ReportState>((set, get) => ({
   },
 
   addExpense: async (expense) => {
-    await execute(`
-      INSERT INTO expenses (category, description, amount, date, paid_by, notes)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `, [expense.category, expense.description, expense.amount, expense.date, expense.paid_by, expense.notes])
+    await upsert("expenses", expense)
     await get().fetchExpenses()
   },
 
   deleteExpense: async (id) => {
-    await execute("DELETE FROM expenses WHERE id = ?", [id])
+    await dbDelete("expenses", id)
     await get().fetchExpenses()
   }
 }))

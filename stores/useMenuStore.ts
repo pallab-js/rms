@@ -1,5 +1,5 @@
 import { create } from "zustand"
-import { query, execute, buildUpdateSql } from "@/lib/db"
+import { query, execute, upsert, dbDelete } from "@/lib/db"
 import { MenuCategory, MenuItem, Modifier } from "@/types"
 
 interface MenuState {
@@ -101,10 +101,7 @@ export const useMenuStore = create<MenuState>((set, get) => ({
 
   addCategory: async (category) => {
     try {
-      await execute(
-        "INSERT INTO menu_categories (name, description, color, icon, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?)",
-        [category.name, category.description, category.color, category.icon, category.sort_order, category.is_active ? 1 : 0]
-      )
+      await upsert("menu_categories", category)
       await get().fetchCategories()
     } catch (err) {
       console.error("Failed to add category:", err)
@@ -114,8 +111,7 @@ export const useMenuStore = create<MenuState>((set, get) => ({
 
   updateCategory: async (id, category) => {
     try {
-      const { sql, params } = buildUpdateSql("menu_categories", category, id)
-      await execute(sql, params)
+      await upsert("menu_categories", category, id)
       await get().fetchCategories()
     } catch (err) {
       console.error("Failed to update category:", err)
@@ -125,7 +121,7 @@ export const useMenuStore = create<MenuState>((set, get) => ({
 
   deleteCategory: async (id) => {
     try {
-      await execute("DELETE FROM menu_categories WHERE id = ?", [id])
+      await dbDelete("menu_categories", id)
       await get().fetchCategories()
     } catch (err) {
       console.error("Failed to delete category:", err)
@@ -136,7 +132,7 @@ export const useMenuStore = create<MenuState>((set, get) => ({
   reorderCategories: async (orderedIds) => {
     try {
       for (let i = 0; i < orderedIds.length; i++) {
-        await execute("UPDATE menu_categories SET sort_order = ? WHERE id = ?", [i, orderedIds[i]])
+        await upsert("menu_categories", { sort_order: i }, orderedIds[i])
       }
       await get().fetchCategories()
     } catch (err) {
@@ -147,11 +143,7 @@ export const useMenuStore = create<MenuState>((set, get) => ({
 
   addItem: async (item) => {
     try {
-      await execute(
-        `INSERT INTO menu_items (category_id, name, description, price, cost_price, sku, image_path, is_active, is_available, prep_time_min, sort_order) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [item.category_id, item.name, item.description, item.price, item.cost_price, item.sku, item.image_path, item.is_active ? 1 : 0, item.is_available ? 1 : 0, item.prep_time_min, item.sort_order]
-      )
+      await upsert("menu_items", item)
       await get().fetchItems()
     } catch (err) {
       console.error("Failed to add item:", err)
@@ -164,8 +156,7 @@ export const useMenuStore = create<MenuState>((set, get) => ({
       const filtered = { ...item }
       delete filtered.category_name
       delete filtered.margin
-      const { sql, params } = buildUpdateSql("menu_items", filtered, id)
-      await execute(sql, params)
+      await upsert("menu_items", filtered, id)
       await get().fetchItems()
     } catch (err) {
       console.error("Failed to update item:", err)
@@ -175,7 +166,7 @@ export const useMenuStore = create<MenuState>((set, get) => ({
 
   deleteItem: async (id) => {
     try {
-      await execute("DELETE FROM menu_items WHERE id = ?", [id])
+      await dbDelete("menu_items", id)
       await get().fetchItems()
     } catch (err) {
       console.error("Failed to delete item:", err)
@@ -185,7 +176,7 @@ export const useMenuStore = create<MenuState>((set, get) => ({
 
   toggleItemAvailability: async (id, isAvailable) => {
     try {
-      await execute("UPDATE menu_items SET is_available = ? WHERE id = ?", [isAvailable ? 1 : 0, id])
+      await upsert("menu_items", { is_available: isAvailable }, id)
       set((state) => ({
         items: state.items.map(item => item.id === id ? { ...item, is_available: isAvailable } : item)
       }))
@@ -197,10 +188,8 @@ export const useMenuStore = create<MenuState>((set, get) => ({
 
   addModifier: async (modifier) => {
     try {
-      await execute(
-        "INSERT INTO modifiers (menu_item_id, name, options, is_required) VALUES (?, ?, ?, ?)",
-        [modifier.menu_item_id, modifier.name, JSON.stringify(modifier.options), modifier.is_required ? 1 : 0]
-      )
+      const data = { ...modifier, options: JSON.stringify(modifier.options) }
+      await upsert("modifiers", data)
       await get().fetchModifiers()
     } catch (err) {
       console.error("Failed to add modifier:", err)
@@ -210,15 +199,9 @@ export const useMenuStore = create<MenuState>((set, get) => ({
 
   updateModifier: async (id, modifier) => {
     try {
-      const fields: string[] = []
-      const params: (string | number)[] = []
-      Object.entries(modifier).forEach(([key, value]) => {
-        if (key === "id") return
-        fields.push(`${key} = ?`)
-        params.push(key === "options" ? JSON.stringify(value) : (key === "is_required" ? (value ? 1 : 0) : value as string | number))
-      })
-      params.push(id)
-      await execute(`UPDATE modifiers SET ${fields.join(", ")} WHERE id = ?`, params)
+      const data: Record<string, unknown> = { ...modifier }
+      if (data.options) data.options = JSON.stringify(data.options)
+      await upsert("modifiers", data, id)
       await get().fetchModifiers()
     } catch (err) {
       console.error("Failed to update modifier:", err)
@@ -228,7 +211,7 @@ export const useMenuStore = create<MenuState>((set, get) => ({
 
   deleteModifier: async (id) => {
     try {
-      await execute("DELETE FROM modifiers WHERE id = ?", [id])
+      await dbDelete("modifiers", id)
       await get().fetchModifiers()
     } catch (err) {
       console.error("Failed to delete modifier:", err)

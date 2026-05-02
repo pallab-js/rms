@@ -1,5 +1,5 @@
 import { create } from "zustand"
-import { query, execute, buildUpdateSql } from "@/lib/db"
+import { query, execute, upsert, dbDelete } from "@/lib/db"
 import { Staff, AttendanceRecord } from "@/types"
 import { format } from "date-fns"
 
@@ -74,21 +74,17 @@ export const useStaffStore = create<StaffState>((set, get) => ({
   },
 
   addStaff: async (member) => {
-    await execute(`
-      INSERT INTO staff (name, role, phone, email, salary, salary_type, join_date, is_active)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 1)
-    `, [member.name, member.role, member.phone, member.email, member.salary, member.salary_type, member.join_date])
+    await upsert("staff", { ...member, is_active: 1 })
     await get().fetchStaff()
   },
 
   updateStaff: async (id, member) => {
-    const { sql, params } = buildUpdateSql("staff", member, id)
-    await execute(sql, params)
+    await upsert("staff", member, id)
     await get().fetchStaff()
   },
 
   deleteStaff: async (id) => {
-    await execute("DELETE FROM staff WHERE id = ?", [id])
+    await dbDelete("staff", id)
     await get().fetchStaff()
   },
 

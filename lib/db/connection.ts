@@ -18,6 +18,17 @@ export async function dbInit(pin: string): Promise<void> {
   }
 }
 
+export async function dbClose(): Promise<void> {
+  try {
+    await invoke("db_close");
+    isInitialized = false;
+    console.log('[DB] Connection closed');
+  } catch (error) {
+    console.error('[DB_CLOSE_ERROR]', error);
+    throw error;
+  }
+}
+
 export function isDbReady(): boolean {
   return isInitialized;
 }
@@ -46,6 +57,47 @@ export async function execute(sql: string, params: unknown[] = []): Promise<{ ch
     const errorMsg = error instanceof Error ? error.message : String(error);
     console.error(`[DB_EXECUTE_ERROR] SQL: "${sql}" | Params: ${JSON.stringify(params)} | Error: ${errorMsg}`);
     throw new Error(`Database write failed. ${process.env.NODE_ENV === 'development' ? `Details: ${errorMsg}` : 'Please try again.'}`);
+  }
+}
+
+export async function upsert(table: string, data: Record<string, unknown>, id?: number): Promise<{ changes: number; lastInsertRowid: number | bigint | null }> {
+  try {
+    if (!isInitialized) {
+      throw new Error('Database not initialized');
+    }
+    const result = await invoke<{ rows_affected: number; last_insert_id: number | null }>("db_upsert", { table, data, id: id || null });
+    return { changes: result.rows_affected, lastInsertRowid: result.last_insert_id };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error(`[DB_UPSERT_ERROR] Table: "${table}" | ID: ${id} | Error: ${errorMsg}`);
+    throw new Error(`Database operation failed. ${process.env.NODE_ENV === 'development' ? `Details: ${errorMsg}` : 'Please try again.'}`);
+  }
+}
+
+export async function dbDelete(table: string, id: number): Promise<{ changes: number }> {
+  try {
+    if (!isInitialized) {
+      throw new Error('Database not initialized');
+    }
+    const result = await invoke<{ rows_affected: number }>("db_delete", { table, id });
+    return { changes: result.rows_affected };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error(`[DB_DELETE_ERROR] Table: "${table}" | ID: ${id} | Error: ${errorMsg}`);
+    throw new Error(`Database delete failed. ${process.env.NODE_ENV === 'development' ? `Details: ${errorMsg}` : 'Please try again.'}`);
+  }
+}
+
+export async function setDbSetting(key: string, value: string): Promise<void> {
+  try {
+    if (!isInitialized) {
+      throw new Error('Database not initialized');
+    }
+    await invoke("db_set_setting", { key, value });
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error(`[DB_SET_SETTING_ERROR] Key: "${key}" | Error: ${errorMsg}`);
+    throw new Error(`Failed to save setting. ${process.env.NODE_ENV === 'development' ? `Details: ${errorMsg}` : 'Please try again.'}`);
   }
 }
 
