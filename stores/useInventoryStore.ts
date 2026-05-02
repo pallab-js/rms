@@ -98,11 +98,8 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
 
   updateItem: async (id, item) => {
     const data = { ...item }
-    // @ts-expect-error -- joined field not in upsert type
     delete data.category_name
-    // @ts-expect-error -- joined field not in upsert type
     delete data.created_at
-    // @ts-expect-error -- joined field not in upsert type
     delete data.updated_at
     
     await upsert("inventory_items", data, id)
