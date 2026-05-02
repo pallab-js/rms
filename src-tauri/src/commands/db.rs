@@ -3,7 +3,6 @@ use rusqlite::{params, Connection, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::Sha256;
-use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager, State};
 
@@ -239,7 +238,7 @@ pub async fn db_upsert(
         return Err("No data provided for upsert".into());
     }
 
-    let (sql, rows_affected) = if let Some(record_id) = id {
+    let (_sql, rows_affected) = if let Some(record_id) = id {
         // UPDATE
         let set_clause = columns
             .iter()
