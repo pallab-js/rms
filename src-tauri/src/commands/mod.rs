@@ -1,4 +1,4 @@
-pub mod settings;
+pub mod db;
 pub mod menu;
 pub mod orders;
-pub mod db;
+pub mod settings;
