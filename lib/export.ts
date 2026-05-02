@@ -1,7 +1,7 @@
 import * as XLSX from "xlsx"
 import { format } from "date-fns"
 
-export function exportToExcel(data: any[], fileName: string, sheetName: string = "Sheet1") {
+export function exportToExcel(data: Record<string, unknown>[], fileName: string, sheetName: string = "Sheet1") {
   const worksheet = XLSX.utils.json_to_sheet(data)
   const workbook = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(workbook, worksheet, sheetName)
@@ -10,7 +10,7 @@ export function exportToExcel(data: any[], fileName: string, sheetName: string =
   XLSX.writeFile(workbook, `${fileName}_${timestamp}.xlsx`)
 }
 
-export function exportToCSV(data: any[], fileName: string) {
+export function exportToCSV(data: Record<string, unknown>[], fileName: string) {
   const worksheet = XLSX.utils.json_to_sheet(data)
   const csv = XLSX.utils.sheet_to_csv(worksheet)
   

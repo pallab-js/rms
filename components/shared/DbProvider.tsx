@@ -7,13 +7,14 @@ import { LockScreen } from "@/components/auth/LockScreen"
 
 export default function DbProvider({ children }: { children: React.ReactNode }) {
   const { isLocked, isAuthenticated } = useAuthStore()
-  const [fetching, setFetching] = useState(false)
+  const [fetching, setFetching] = useState(() => isAuthenticated && !isLocked)
 
   useEffect(() => {
     if (isAuthenticated && !isLocked) {
-      setFetching(true)
+      let cancelled = false
       useSettingsStore.getState().fetchSettings()
-        .finally(() => setFetching(false))
+        .finally(() => { if (!cancelled) setFetching(false) })
+      return () => { cancelled = true }
     }
   }, [isAuthenticated, isLocked])
 
