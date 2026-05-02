@@ -4,24 +4,24 @@ A desktop restaurant management system built with Tauri, Next.js, and SQLite.
 
 ## Features
 
-- **Dashboard** - Real-time sales overview, order tracking, low-stock alerts
-- **Tables** - Table layout editor, reservation Management, timeline view
-- **Orders** - Order creation, multi-item cart, payment processing
-- **Menu** - Categories, items, modifiers, pricing with margin calculation
-- **Inventory** - Stock tracking, transactions, low-stock alerts
-- **Staff** - Employee management, roles, attendance tracking
-- **Billing** - Split payments, multiple payment methods
-- **Reports** - Sales analytics, expense tracking
-- **Settings** - Restaurant configuration, tax settings
+- **Advanced Security** - Full database encryption via **SQLCipher** (AES-256) and secure PIN-based POS lock screen.
+- **Reporting & Export** - Professional PDF receipts for customers and one-click Excel/CSV export for inventory, staff, and financial records.
+- **Dashboard** - Real-time sales overview, order tracking, low-stock alerts with loading skeletons.
+- **Tables** - Table layout editor, reservation Management, timeline view.
+- **Orders** - Order creation, multi-item cart, payment processing with audit logging.
+- **Inventory** - Stock tracking, transactions, low-stock alerts, and value reporting.
+- **Staff** - Employee management, roles, attendance tracking, and salary overview.
+- **Reliability** - Versioned database migrations, automated timestamped backups, and modular architecture.
 
 ## Tech Stack
 
 - **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS
 - **Desktop**: Tauri 2.x
-- **Database**: SQLite (via @tauri-apps/plugin-sql)
+- **Database**: SQLite with **SQLCipher** (AES-256 Encryption)
 - **State**: Zustand
+- **Reporting**: jsPDF (PDF) & SheetJS (Excel/CSV)
 - **Forms**: React Hook Form + Zod validation
-- **UI**: shadcn/ui components
+- **UI**: shadcn/ui components with Error Boundaries
 
 ## Development
 
